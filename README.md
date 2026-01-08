@@ -3,7 +3,7 @@
 <div align="center">
 
 ![Version](https://img.shields.io/badge/version-1.5.0-blue.svg)
-![Flutter](https://img.shields.io/badge/Flutter-3.9.0-02569B?logo=flutter)
+![Flutter](https://img.shields.io/badge/Flutter-3.38.4-02569B?logo=flutter)
 ![Android](https://img.shields.io/badge/Android-7.0%2B-3DDC84?logo=android)
 ![License](https://img.shields.io/badge/license-GPL--3.0-green.svg)
 
