@@ -1,0 +1,62 @@
+ZED-SECURE VPN APPLICATION
+Copyright (C) 2025 CluvexStudio
+
+This application is licensed under GNU General Public License v3.0 (GPL-3.0)
+with additional terms as specified in the LICENSE file.
+
+================================================================================
+ATTRIBUTION NOTICE
+================================================================================
+
+This software was created by CluvexStudio.
+Original repository: https://github.com/CluvexStudio/ZedSecure
+
+If you use, modify, or distribute this software, you MUST:
+
+1. Retain this copyright notice in all copies or substantial portions
+2. Clearly credit "CluvexStudio" in your application's About/Credits section
+3. Provide a link to the original repository
+4. State any modifications made to the original code
+5. License your derivative work under GPL-3.0
+
+================================================================================
+THIRD-PARTY COMPONENTS
+================================================================================
+
+This application incorporates the following open-source components:
+
+- Xray-core (MPL-2.0) - https://github.com/XTLS/Xray-core
+- Flutter framework (BSD-3-Clause) - https://flutter.dev
+- flutter_v2ray (MIT) - https://pub.dev/packages/flutter_v2ray
+- Fluent UI (BSD-3-Clause) - https://pub.dev/packages/fluent_ui
+- Various Flutter packages (see pubspec.yaml for full list)
+
+Each component retains its original license and copyright notices.
+
+================================================================================
+COMMERCIAL USE
+================================================================================
+
+Commercial use of this software requires explicit written permission.
+Contact: https://github.com/CluvexStudio/ZedSecure/issues
+
+================================================================================
+DISCLAIMER
+================================================================================
+
+This software is provided "AS IS" without warranty of any kind.
+The authors are not responsible for any damages or legal issues arising
+from the use of this software.
+
+Users are solely responsible for:
+- Complying with local laws and regulations
+- Proper configuration and use of VPN services
+- Any consequences of using this software
+
+================================================================================
+
+For questions, issues, or licensing inquiries:
+https://github.com/CluvexStudio/ZedSecure
+
+Last Updated: October 2025
+

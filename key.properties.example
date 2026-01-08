@@ -1,0 +1,5 @@
+storeFile=android/app/zedsecure-release-new.keystore
+storePassword=YOUR_STRONG_PASSWORD_HERE
+keyAlias=zedsecure
+keyPassword=YOUR_STRONG_PASSWORD_HERE
+
