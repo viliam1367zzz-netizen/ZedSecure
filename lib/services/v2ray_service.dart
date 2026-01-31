@@ -587,7 +587,7 @@ class V2RayService extends ChangeNotifier {
 
   Future<int?> getConnectedServerDelay() async {
     try {
-      if (!_isConnected || _activeConfig == null) {
+      if (!isConnected || _activeConfig == null) {
         return null;
       }
 
