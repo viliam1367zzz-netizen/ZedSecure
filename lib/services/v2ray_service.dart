@@ -8,6 +8,7 @@ import 'package:zedsecure/models/subscription.dart';
 import 'package:zedsecure/models/app_settings.dart';
 import 'package:zedsecure/services/v2ray_config_builder.dart';
 import 'package:zedsecure/services/log_service.dart';
+import 'package:zedsecure/services/native_ping_service.dart';
 import 'package:flutter/foundation.dart';
 
 class V2RayService extends ChangeNotifier {
@@ -586,10 +587,61 @@ class V2RayService extends ChangeNotifier {
 
   Future<int?> getConnectedServerDelay() async {
     try {
-      final delay = await _flutterV2ray.getConnectedServerDelay();
-      return delay >= 0 ? delay : null;
+      if (!_isConnected || _activeConfig == null) {
+        return null;
+      }
+
+      final prefs = await SharedPreferences.getInstance();
+      final settingsJson = prefs.getString('app_settings');
+      String testUrl = 'https://www.gstatic.com/generate_204';
+      
+      if (settingsJson != null) {
+        try {
+          final settings = AppSettings.fromJson(jsonDecode(settingsJson));
+          testUrl = settings.connectionTestUrl;
+        } catch (e) {
+          debugPrint('Error loading test URL from settings: $e');
+        }
+      }
+
+      final delay = await _flutterV2ray.getConnectedServerDelay(url: testUrl);
+      if (delay >= 0) {
+        return delay;
+      }
+
+      debugPrint('V2Ray delay failed, trying native ping...');
+      final pingResult = await NativePingService.pingHost(
+        host: _activeConfig!.address,
+        port: _activeConfig!.port,
+        timeoutMs: 5000,
+        useCache: false,
+      );
+
+      if (pingResult.success) {
+        return pingResult.latency;
+      }
+
+      return null;
     } catch (e) {
       debugPrint('Error getting connected server delay: $e');
+      
+      if (_activeConfig != null) {
+        try {
+          final pingResult = await NativePingService.pingHost(
+            host: _activeConfig!.address,
+            port: _activeConfig!.port,
+            timeoutMs: 5000,
+            useCache: false,
+          );
+
+          if (pingResult.success) {
+            return pingResult.latency;
+          }
+        } catch (pingError) {
+          debugPrint('Native ping also failed: $pingError');
+        }
+      }
+      
       return null;
     }
   }
