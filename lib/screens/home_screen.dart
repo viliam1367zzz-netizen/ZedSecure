@@ -529,7 +529,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
               child: _buildStatCard(
                 icon: CupertinoIcons.arrow_up_circle_fill,
                 title: 'UPLOAD',
-                value: AppTheme.formatBytes(status.uploadTotal),
+                value: AppTheme.formatBytes(status.upload),
                 color: AppTheme.neonGreen,
               ),
             ),
@@ -538,7 +538,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
               child: _buildStatCard(
                 icon: CupertinoIcons.arrow_down_circle_fill,
                 title: 'DOWNLOAD',
-                value: AppTheme.formatBytes(status.downloadTotal),
+                value: AppTheme.formatBytes(status.download),
                 color: AppTheme.neonCyan,
               ),
             ),
