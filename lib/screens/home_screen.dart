@@ -4,7 +4,6 @@ import 'dart:ui';
 import 'dart:math' as math;
 import 'package:provider/provider.dart';
 import 'package:zedsecure/services/v2ray_service.dart';
-import 'package:zedsecure/services/country_detector.dart';
 import 'package:zedsecure/services/log_service.dart';
 import 'package:zedsecure/models/v2ray_config.dart';
 import 'package:zedsecure/theme/app_theme.dart';
@@ -573,7 +572,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
   // Server Card
   Widget _buildServerCard(V2RayConfig config, bool isConnected) {
     final countryCode = config.countryCode ?? 'UN';
-    final flagEmoji = CountryDetector.getCountryEmoji(countryCode);
+    final flagEmoji = _getCountryEmoji(countryCode);
     
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -806,6 +805,16 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
         ],
       ),
     );
+  }
+
+  String _getCountryEmoji(String countryCode) {
+    final Map<String, String> flags = {
+      'US': '🇺🇸', 'DE': '🇩🇪', 'NL': '🇳🇱', 'FR': '🇫🇷', 'GB': '🇬🇧',
+      'JP': '🇯🇵', 'SG': '🇸🇬', 'HK': '🇭🇰', 'KR': '🇰🇷', 'CA': '🇨🇦',
+      'AU': '🇦🇺', 'FI': '🇫🇮', 'SE': '🇸🇪', 'CH': '🇨🇭', 'IR': '🇮🇷',
+      'TR': '🇹🇷', 'RU': '🇷🇺', 'IN': '🇮🇳', 'BR': '🇧🇷', 'AE': '🇦🇪',
+    };
+    return flags[countryCode.toUpperCase()] ?? '🌍';
   }
 
   // Logs Modal

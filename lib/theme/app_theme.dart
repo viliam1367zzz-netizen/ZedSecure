@@ -8,6 +8,12 @@ class AppTheme {
   static const Color oceanLight = Color(0xFF00BFFF);
   static const Color oceanGlow = Color(0xFF00D4FF);
   
+  // Compatibility aliases (for other screens)
+  static const Color primaryBlue = oceanBlue;
+  static const Color neonCyan = oceanCyan;
+  static const Color neonGreen = Color(0xFF00C8C8);
+  static const Color neonOrange = Color(0xFFFF9500);
+  
   // Background Colors
   static const Color darkBg = Color(0xFF0A1628);
   static const Color darkBg2 = Color(0xFF061220);
