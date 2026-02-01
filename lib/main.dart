@@ -19,6 +19,8 @@ void main() {
     const SystemUiOverlayStyle(
       statusBarColor: Colors.transparent,
       statusBarIconBrightness: Brightness.light,
+      systemNavigationBarColor: Colors.black,
+      systemNavigationBarIconBrightness: Brightness.light,
     ),
   );
   runApp(const MyApp());
@@ -39,7 +41,7 @@ class MyApp extends StatelessWidget {
         builder: (context, themeService, child) {
           return MaterialApp(
             title: 'ZedSecure VPN',
-            themeMode: themeService.themeMode,
+            themeMode: ThemeMode.dark, // Force dark mode for neon
             darkTheme: AppTheme.darkTheme(),
             theme: AppTheme.lightTheme(),
             home: const MainNavigation(),
@@ -62,6 +64,7 @@ class _MainNavigationState extends State<MainNavigation> with TickerProviderStat
   int _selectedIndex = 0;
   late AnimationController _animationController;
   late AnimationController _slideIndicatorController;
+  late AnimationController _glowController;
   late Animation<double> _scaleAnimation;
   late Animation<Offset> _slideAnimation;
   late Animation<double> _slideIndicatorAnimation;
@@ -85,6 +88,11 @@ class _MainNavigationState extends State<MainNavigation> with TickerProviderStat
       duration: const Duration(milliseconds: 350),
       vsync: this,
     );
+
+    _glowController = AnimationController(
+      duration: const Duration(milliseconds: 2000),
+      vsync: this,
+    )..repeat(reverse: true);
     
     _scaleAnimation = Tween<double>(begin: 0.8, end: 1.0).animate(
       CurvedAnimation(parent: _animationController, curve: Curves.easeOutBack),
@@ -123,6 +131,7 @@ class _MainNavigationState extends State<MainNavigation> with TickerProviderStat
   void dispose() {
     _animationController.dispose();
     _slideIndicatorController.dispose();
+    _glowController.dispose();
     super.dispose();
   }
 
@@ -150,10 +159,9 @@ class _MainNavigationState extends State<MainNavigation> with TickerProviderStat
 
   @override
   Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    
     return Scaffold(
       extendBody: true,
+      backgroundColor: AppTheme.darkBg,
       body: AnimatedSwitcher(
         duration: const Duration(milliseconds: 300),
         switchInCurve: Curves.easeInOut,
@@ -176,86 +184,98 @@ class _MainNavigationState extends State<MainNavigation> with TickerProviderStat
           children: _screens,
         ),
       ),
-      bottomNavigationBar: _buildGlassTabBar(isDark),
+      bottomNavigationBar: _buildNeonTabBar(),
     );
   }
 
-  Widget _buildGlassTabBar(bool isDark) {
-    return Container(
-      margin: const EdgeInsets.fromLTRB(20, 0, 20, 30),
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(25),
-        child: AnimatedContainer(
-          duration: const Duration(milliseconds: 300),
-          height: 70,
-          decoration: BoxDecoration(
+  Widget _buildNeonTabBar() {
+    return AnimatedBuilder(
+      animation: _glowController,
+      builder: (context, child) {
+        return Container(
+          margin: const EdgeInsets.fromLTRB(20, 0, 20, 30),
+          child: ClipRRect(
             borderRadius: BorderRadius.circular(25),
-            color: isDark 
-                ? Colors.black.withOpacity(0.6)
-                : Colors.white.withOpacity(0.8),
-            border: Border.all(
-              color: isDark 
-                  ? Colors.white.withOpacity(0.1)
-                  : Colors.black.withOpacity(0.05),
-              width: 0.5,
-            ),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withOpacity(0.2),
-                blurRadius: 20,
-                offset: const Offset(0, 5),
-              ),
-            ],
-          ),
-          child: Stack(
-            children: [
-              AnimatedBuilder(
-                animation: _slideIndicatorAnimation,
-                builder: (context, child) {
-                  final screenWidth = MediaQuery.of(context).size.width;
-                  final tabWidth = (screenWidth - 80) / 4;
-                  final indicatorWidth = tabWidth * 0.7;
-                  final indicatorHeight = 4.0;
-                  
-                  return Positioned(
-                    left: 20 + (_slideIndicatorAnimation.value * tabWidth) + (tabWidth - indicatorWidth) / 2,
-                    bottom: 8,
-                    child: Container(
-                      width: indicatorWidth,
-                      height: indicatorHeight,
-                      decoration: BoxDecoration(
-                        borderRadius: BorderRadius.circular(2),
-                        color: AppTheme.primaryBlue,
-                        boxShadow: [
-                          BoxShadow(
-                            color: AppTheme.primaryBlue.withOpacity(0.5),
-                            blurRadius: 8,
-                            spreadRadius: 1,
-                          ),
-                        ],
-                      ),
-                    ),
-                  );
-                },
-              ),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                children: [
-                  _buildTabItem(0, CupertinoIcons.house_fill, 'Home', isDark),
-                  _buildTabItem(1, CupertinoIcons.rectangle_stack_fill, 'Servers', isDark),
-                  _buildTabItem(2, CupertinoIcons.cloud_fill, 'Subs', isDark),
-                  _buildTabItem(3, CupertinoIcons.gear_solid, 'Settings', isDark),
+            child: Container(
+              height: 70,
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(25),
+                color: AppTheme.darkCard.withOpacity(0.95),
+                border: Border.all(
+                  color: AppTheme.neonCyan.withOpacity(0.3 + (_glowController.value * 0.1)),
+                  width: 1,
+                ),
+                boxShadow: [
+                  BoxShadow(
+                    color: AppTheme.neonCyan.withOpacity(0.15 + (_glowController.value * 0.05)),
+                    blurRadius: 20 + (_glowController.value * 5),
+                    spreadRadius: 2,
+                  ),
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.5),
+                    blurRadius: 20,
+                    offset: const Offset(0, 5),
+                  ),
                 ],
               ),
-            ],
+              child: Stack(
+                children: [
+                  // Animated Neon Indicator
+                  AnimatedBuilder(
+                    animation: _slideIndicatorAnimation,
+                    builder: (context, child) {
+                      final screenWidth = MediaQuery.of(context).size.width;
+                      final tabWidth = (screenWidth - 80) / 4;
+                      final indicatorWidth = tabWidth * 0.7;
+                      
+                      return Positioned(
+                        left: 20 + (_slideIndicatorAnimation.value * tabWidth) + (tabWidth - indicatorWidth) / 2,
+                        bottom: 8,
+                        child: Container(
+                          width: indicatorWidth,
+                          height: 4,
+                          decoration: BoxDecoration(
+                            borderRadius: BorderRadius.circular(2),
+                            gradient: LinearGradient(
+                              colors: [
+                                AppTheme.neonCyan,
+                                AppTheme.neonPurple,
+                              ],
+                            ),
+                            boxShadow: [
+                              BoxShadow(
+                                color: AppTheme.neonCyan.withOpacity(0.8),
+                                blurRadius: 10,
+                                spreadRadius: 2,
+                              ),
+                            ],
+                          ),
+                        ),
+                      );
+                    },
+                  ),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                    children: [
+                      _buildTabItem(0, CupertinoIcons.house_fill, 'Home'),
+                      _buildTabItem(1, CupertinoIcons.rectangle_stack_fill, 'Servers'),
+                      _buildTabItem(2, CupertinoIcons.cloud_fill, 'Subs'),
+                      _buildTabItem(3, CupertinoIcons.gear_solid, 'Settings'),
+                    ],
+                  ),
+                ],
+              ),
+            ),
           ),
-        ),
-      ),
+        );
+      },
     );
   }
 
-  Widget _buildTabItem(int index, IconData icon, String label, bool isDark) {
+  Widget _buildTabItem(int index, IconData icon, String label) {
     final isSelected = _selectedIndex == index;
+    final color = isSelected ? AppTheme.neonCyan : Colors.white38;
+    
     return GestureDetector(
       onTap: () => _onTabTapped(index),
       behavior: HitTestBehavior.opaque,
@@ -265,15 +285,19 @@ class _MainNavigationState extends State<MainNavigation> with TickerProviderStat
           mainAxisSize: MainAxisSize.min,
           children: [
             AnimatedScale(
-              scale: isSelected ? 1.15 : 1.0,
+              scale: isSelected ? 1.2 : 1.0,
               duration: const Duration(milliseconds: 300),
               curve: Curves.easeOutBack,
               child: Icon(
                 icon,
                 size: 24,
-                color: isSelected 
-                    ? AppTheme.primaryBlue 
-                    : (isDark ? Colors.white54 : Colors.black45),
+                color: color,
+                shadows: isSelected ? [
+                  Shadow(
+                    color: AppTheme.neonCyan.withOpacity(0.8),
+                    blurRadius: 15,
+                  ),
+                ] : null,
               ),
             ),
             const SizedBox(height: 4),
@@ -282,10 +306,14 @@ class _MainNavigationState extends State<MainNavigation> with TickerProviderStat
               curve: Curves.easeInOut,
               style: TextStyle(
                 fontSize: 10,
-                fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
-                color: isSelected 
-                    ? AppTheme.primaryBlue 
-                    : (isDark ? Colors.white54 : Colors.black45),
+                fontWeight: isSelected ? FontWeight.w700 : FontWeight.normal,
+                color: color,
+                shadows: isSelected ? [
+                  Shadow(
+                    color: AppTheme.neonCyan.withOpacity(0.8),
+                    blurRadius: 10,
+                  ),
+                ] : null,
               ),
               child: Text(label),
             ),
