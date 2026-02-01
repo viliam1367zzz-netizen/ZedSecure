@@ -439,7 +439,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                     ),
                     const SizedBox(height: 4),
                     Text(
-                      '${config.protocol.toUpperCase()} • ${config.address}',
+                      '${config.configType.toUpperCase()} • ${config.address}',
                       style: TextStyle(
                         fontSize: 12,
                         color: AppTheme.systemGray,
@@ -676,7 +676,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                   const Spacer(),
                   GestureDetector(
                     onTap: () {
-                      LogService.clearLogs();
+                      LogService().clear();
                       Navigator.pop(context);
                     },
                     child: Container(
@@ -699,10 +699,10 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
               ),
             ),
             Expanded(
-              child: StreamBuilder<List<dynamic>>(
-                stream: LogService.logsStream,
-                builder: (context, snapshot) {
-                  final logs = snapshot.data ?? [];
+              child: ListenableBuilder(
+                listenable: LogService(),
+                builder: (context, child) {
+                  final logs = LogService().logs;
                   if (logs.isEmpty) {
                     return Center(
                       child: Text(
@@ -718,16 +718,16 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                       final log = logs[index];
                       Color levelColor;
                       switch (log.level) {
-                        case 'INFO':
+                        case LogLevel.info:
                           levelColor = AppTheme.neonCyan;
                           break;
-                        case 'WARNING':
+                        case LogLevel.warning:
                           levelColor = AppTheme.neonOrange;
                           break;
-                        case 'ERROR':
+                        case LogLevel.error:
                           levelColor = AppTheme.disconnectedRed;
                           break;
-                        case 'SUCCESS':
+                        case LogLevel.debug:
                           levelColor = AppTheme.neonGreen;
                           break;
                         default:
