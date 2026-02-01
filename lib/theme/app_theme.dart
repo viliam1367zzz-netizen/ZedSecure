@@ -1,414 +1,276 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/cupertino.dart';
-import 'dart:ui';
 
 class AppTheme {
-  // 🌈 Neon Colors
-  static const Color neonCyan = Color(0xFF00FFFF);
-  static const Color neonMagenta = Color(0xFFFF00FF);
-  static const Color neonGreen = Color(0xFF39FF14);
-  static const Color neonPurple = Color(0xFFBF00FF);
-  static const Color neonPink = Color(0xFFFF1493);
-  static const Color neonBlue = Color(0xFF00BFFF);
-  static const Color neonYellow = Color(0xFFFFFF00);
-  static const Color neonOrange = Color(0xFFFF6600);
-
-  // 🎨 App Main Colors (Neon Style)
-  static const Color primaryBlue = neonCyan;
-  static const Color connectedGreen = neonGreen;
-  static const Color disconnectedRed = Color(0xFFFF3131);
-  static const Color warningOrange = neonOrange;
+  // Ocean Theme Colors
+  static const Color oceanBlue = Color(0xFF0099FF);
+  static const Color oceanCyan = Color(0xFF00C8C8);
+  static const Color oceanDeep = Color(0xFF006699);
+  static const Color oceanLight = Color(0xFF00BFFF);
+  static const Color oceanGlow = Color(0xFF00D4FF);
   
-  // 🖤 Dark Background Colors
-  static const Color darkBg = Color(0xFF0A0A0F);
-  static const Color darkBg2 = Color(0xFF12121A);
-  static const Color darkCard = Color(0xFF1A1A25);
-  static const Color darkCardBorder = Color(0xFF2A2A3A);
-
-  // ⚪ Gray System
+  // Background Colors
+  static const Color darkBg = Color(0xFF0A1628);
+  static const Color darkBg2 = Color(0xFF061220);
+  static const Color darkCard = Color(0xFF0D1A2D);
+  static const Color darkCard2 = Color(0xFF102030);
+  
+  // Status Colors
+  static const Color connectedGreen = Color(0xFF00C8C8);
+  static const Color disconnectedRed = Color(0xFFFF4757);
+  static const Color warningOrange = Color(0xFFFF9500);
+  
+  // Text Colors
+  static const Color textPrimary = Colors.white;
+  static const Color textSecondary = Color(0xFFB0B8C4);
+  static const Color textMuted = Color(0xFF6B7280);
+  
+  // System Colors
   static const Color systemGray = Color(0xFF8E8E93);
   static const Color systemGray2 = Color(0xFFAEAEB2);
-  static const Color systemGray3 = Color(0xFFC7C7CC);
-  static const Color systemGray4 = Color(0xFFD1D1D6);
-  static const Color systemGray5 = Color(0xFFE5E5EA);
-  static const Color systemGray6 = Color(0xFFF2F2F7);
+  
+  // Gradients
+  static const LinearGradient oceanGradient = LinearGradient(
+    colors: [oceanBlue, oceanCyan],
+    begin: Alignment.topLeft,
+    end: Alignment.bottomRight,
+  );
+  
+  static const LinearGradient backgroundGradient = LinearGradient(
+    colors: [darkBg, darkBg2, Color(0xFF020810)],
+    begin: Alignment.topCenter,
+    end: Alignment.bottomCenter,
+  );
+  
+  static const LinearGradient cardGradient = LinearGradient(
+    colors: [
+      Color(0x26009AFF),
+      Color(0x1A00C8C8),
+    ],
+    begin: Alignment.topLeft,
+    end: Alignment.bottomRight,
+  );
 
-  static ThemeData lightTheme() {
-    return ThemeData(
-      brightness: Brightness.dark,
-      primaryColor: neonCyan,
-      scaffoldBackgroundColor: darkBg,
-      appBarTheme: const AppBarTheme(
-        backgroundColor: Colors.transparent,
-        elevation: 0,
-        iconTheme: IconThemeData(color: neonCyan),
-        titleTextStyle: TextStyle(
-          color: Colors.white,
-          fontSize: 17,
-          fontWeight: FontWeight.w600,
-        ),
-      ),
-      colorScheme: const ColorScheme.dark(
-        primary: neonCyan,
-        secondary: neonGreen,
-        surface: darkCard,
-      ),
-    );
-  }
-
+  // Dark Theme
   static ThemeData darkTheme() {
     return ThemeData(
       brightness: Brightness.dark,
-      primaryColor: neonCyan,
+      primaryColor: oceanBlue,
       scaffoldBackgroundColor: darkBg,
+      fontFamily: 'SF Pro Display',
       appBarTheme: const AppBarTheme(
         backgroundColor: Colors.transparent,
         elevation: 0,
-        iconTheme: IconThemeData(color: neonCyan),
-        titleTextStyle: TextStyle(
-          color: Colors.white,
-          fontSize: 17,
-          fontWeight: FontWeight.w600,
-        ),
       ),
       colorScheme: const ColorScheme.dark(
-        primary: neonCyan,
-        secondary: neonGreen,
+        primary: oceanBlue,
+        secondary: oceanCyan,
         surface: darkCard,
       ),
     );
   }
 
-  // ✨ Neon Glow Box Decoration
-  static BoxDecoration neonGlowDecoration({
-    Color glowColor = neonCyan,
-    double borderRadius = 16,
-    double glowIntensity = 0.5,
-    double glowSpread = 8,
+  // Ocean Glow Decoration
+  static BoxDecoration oceanGlowDecoration({
+    Color color = oceanBlue,
+    double borderRadius = 20,
+    double glowIntensity = 0.3,
     double glowBlur = 20,
   }) {
     return BoxDecoration(
       borderRadius: BorderRadius.circular(borderRadius),
       color: darkCard,
       border: Border.all(
-        color: glowColor.withOpacity(0.6),
+        color: color.withOpacity(0.4),
         width: 1.5,
       ),
       boxShadow: [
         BoxShadow(
-          color: glowColor.withOpacity(glowIntensity),
+          color: color.withOpacity(glowIntensity),
           blurRadius: glowBlur,
-          spreadRadius: glowSpread,
-        ),
-        BoxShadow(
-          color: glowColor.withOpacity(glowIntensity * 0.5),
-          blurRadius: glowBlur * 2,
-          spreadRadius: glowSpread * 1.5,
+          spreadRadius: 0,
         ),
       ],
     );
   }
 
-  // 🌈 Neon Gradient Decoration
-  static BoxDecoration neonGradientDecoration({
-    List<Color>? colors,
-    double borderRadius = 16,
+  // Ocean Card Decoration
+  static BoxDecoration oceanCardDecoration({
+    Color? borderColor,
+    double borderRadius = 24,
   }) {
     return BoxDecoration(
       borderRadius: BorderRadius.circular(borderRadius),
-      gradient: LinearGradient(
-        begin: Alignment.topLeft,
-        end: Alignment.bottomRight,
-        colors: colors ?? [neonCyan.withOpacity(0.3), neonPurple.withOpacity(0.3)],
-      ),
+      gradient: cardGradient,
       border: Border.all(
-        color: neonCyan.withOpacity(0.4),
+        color: borderColor ?? oceanBlue.withOpacity(0.25),
         width: 1,
       ),
     );
   }
 
-  // 🔲 Glass Decoration with Neon Border
+  // Glass Effect Decoration
   static BoxDecoration glassDecoration({
-    double borderRadius = 16,
-    bool isDark = true,
-    Color borderColor = neonCyan,
+    double borderRadius = 20,
+    Color borderColor = oceanBlue,
   }) {
     return BoxDecoration(
       borderRadius: BorderRadius.circular(borderRadius),
-      color: darkCard.withOpacity(0.7),
+      color: darkCard.withOpacity(0.8),
       border: Border.all(
         color: borderColor.withOpacity(0.3),
         width: 1,
       ),
-      boxShadow: [
-        BoxShadow(
-          color: borderColor.withOpacity(0.1),
-          blurRadius: 10,
-          spreadRadius: 2,
-        ),
-      ],
     );
   }
 
-  // 📱 iOS Card with Neon
-  static BoxDecoration iosCardDecoration({bool isDark = true}) {
-    return BoxDecoration(
-      borderRadius: BorderRadius.circular(12),
-      color: darkCard,
-      border: Border.all(
-        color: neonCyan.withOpacity(0.2),
-        width: 1,
-      ),
-      boxShadow: [
-        BoxShadow(
-          color: neonCyan.withOpacity(0.1),
-          blurRadius: 15,
-          spreadRadius: 2,
-        ),
-      ],
-    );
-  }
-
-  // 🏝️ Dynamic Island with Neon
-  static BoxDecoration dynamicIslandDecoration() {
-    return BoxDecoration(
-      borderRadius: BorderRadius.circular(44),
-      color: darkCard,
-      border: Border.all(
-        color: neonGreen.withOpacity(0.5),
-        width: 1.5,
-      ),
-      boxShadow: [
-        BoxShadow(
-          color: neonGreen.withOpacity(0.3),
-          blurRadius: 20,
-          spreadRadius: 5,
-        ),
-        BoxShadow(
-          color: Colors.black.withOpacity(0.5),
-          blurRadius: 20,
-          spreadRadius: 5,
-        ),
-      ],
-    );
-  }
-
-  // 🔘 Neon Button Decoration
-  static BoxDecoration neonButtonDecoration({
-    Color color = neonCyan,
-    double borderRadius = 30,
-    bool isPressed = false,
+  // Ocean Button Decoration
+  static BoxDecoration oceanButtonDecoration({
+    Color color = oceanBlue,
+    double borderRadius = 50,
+    bool isActive = true,
   }) {
     return BoxDecoration(
       borderRadius: BorderRadius.circular(borderRadius),
-      gradient: LinearGradient(
+      gradient: isActive ? LinearGradient(
+        colors: [color, oceanCyan],
         begin: Alignment.topLeft,
         end: Alignment.bottomRight,
-        colors: [
-          color.withOpacity(isPressed ? 0.4 : 0.2),
-          color.withOpacity(isPressed ? 0.2 : 0.1),
-        ],
-      ),
+      ) : null,
+      color: isActive ? null : darkCard,
       border: Border.all(
-        color: color.withOpacity(0.8),
+        color: color.withOpacity(isActive ? 0.5 : 0.3),
         width: 2,
       ),
-      boxShadow: [
+      boxShadow: isActive ? [
         BoxShadow(
-          color: color.withOpacity(isPressed ? 0.7 : 0.5),
-          blurRadius: isPressed ? 30 : 20,
-          spreadRadius: isPressed ? 5 : 2,
+          color: color.withOpacity(0.4),
+          blurRadius: 25,
+          spreadRadius: 0,
         ),
-      ],
+      ] : null,
     );
   }
 
-  // 📊 Ping Color
-  static Color getPingColor(int? ping) {
-    if (ping == null || ping < 0) return systemGray;
-    if (ping < 100) return neonGreen;
-    if (ping < 300) return neonOrange;
-    return disconnectedRed;
-  }
-
-  // 📈 Format Speed
-  static String formatSpeed(int bytesPerSecond) {
-    if (bytesPerSecond < 1024) {
-      return '$bytesPerSecond B/s';
-    } else if (bytesPerSecond < 1024 * 1024) {
-      return '${(bytesPerSecond / 1024).toStringAsFixed(1)} KB/s';
-    } else {
-      return '${(bytesPerSecond / (1024 * 1024)).toStringAsFixed(1)} MB/s';
-    }
-  }
-
-  // 📦 Format Bytes
-  static String formatBytes(int bytes) {
-    if (bytes < 1024) {
-      return '$bytes B';
-    } else if (bytes < 1024 * 1024) {
-      return '${(bytes / 1024).toStringAsFixed(1)} KB';
-    } else if (bytes < 1024 * 1024 * 1024) {
-      return '${(bytes / (1024 * 1024)).toStringAsFixed(1)} MB';
-    } else {
-      return '${(bytes / (1024 * 1024 * 1024)).toStringAsFixed(1)} GB';
-    }
-  }
-
-  // ✨ Neon Text Style
-  static TextStyle neonTextStyle({
-    Color color = neonCyan,
-    double fontSize = 16,
-    FontWeight fontWeight = FontWeight.w600,
+  // Ocean Text Style
+  static TextStyle oceanTextStyle({
+    Color color = textPrimary,
+    double fontSize = 14,
+    FontWeight fontWeight = FontWeight.w500,
+    bool withGlow = false,
   }) {
     return TextStyle(
       color: color,
       fontSize: fontSize,
       fontWeight: fontWeight,
-      shadows: [
+      shadows: withGlow ? [
         Shadow(
-          color: color.withOpacity(0.8),
+          color: color.withOpacity(0.6),
           blurRadius: 10,
         ),
-        Shadow(
-          color: color.withOpacity(0.5),
-          blurRadius: 20,
-        ),
-      ],
+      ] : null,
     );
+  }
+
+  // Ping Color
+  static Color getPingColor(int? ping) {
+    if (ping == null || ping < 0) return systemGray;
+    if (ping < 100) return connectedGreen;
+    if (ping < 200) return oceanBlue;
+    if (ping < 400) return warningOrange;
+    return disconnectedRed;
+  }
+
+  // Format Speed
+  static String formatSpeed(int? bytesPerSecond) {
+    if (bytesPerSecond == null || bytesPerSecond <= 0) return '0 B/s';
+    
+    const units = ['B/s', 'KB/s', 'MB/s', 'GB/s'];
+    int unitIndex = 0;
+    double speed = bytesPerSecond.toDouble();
+    
+    while (speed >= 1024 && unitIndex < units.length - 1) {
+      speed /= 1024;
+      unitIndex++;
+    }
+    
+    if (speed >= 100) {
+      return '${speed.toStringAsFixed(0)} ${units[unitIndex]}';
+    } else if (speed >= 10) {
+      return '${speed.toStringAsFixed(1)} ${units[unitIndex]}';
+    } else {
+      return '${speed.toStringAsFixed(2)} ${units[unitIndex]}';
+    }
+  }
+
+  // Format Bytes
+  static String formatBytes(int? bytes) {
+    if (bytes == null || bytes <= 0) return '0 B';
+    
+    const units = ['B', 'KB', 'MB', 'GB', 'TB'];
+    int unitIndex = 0;
+    double size = bytes.toDouble();
+    
+    while (size >= 1024 && unitIndex < units.length - 1) {
+      size /= 1024;
+      unitIndex++;
+    }
+    
+    if (size >= 100) {
+      return '${size.toStringAsFixed(0)} ${units[unitIndex]}';
+    } else if (size >= 10) {
+      return '${size.toStringAsFixed(1)} ${units[unitIndex]}';
+    } else {
+      return '${size.toStringAsFixed(2)} ${units[unitIndex]}';
+    }
+  }
+
+  // Format Duration
+  static String formatDuration(String? duration) {
+    if (duration == null || duration.isEmpty) return '00:00:00';
+    return duration;
   }
 }
 
-// ✨ Neon Glass Container Widget
-class GlassContainer extends StatelessWidget {
+// Ocean Glass Container Widget
+class OceanGlassContainer extends StatelessWidget {
   final Widget child;
-  final double borderRadius;
   final EdgeInsetsGeometry? padding;
   final EdgeInsetsGeometry? margin;
-  final Color glowColor;
+  final double borderRadius;
+  final Color? borderColor;
+  final bool withGlow;
 
-  const GlassContainer({
+  const OceanGlassContainer({
     super.key,
     required this.child,
-    this.borderRadius = 20,
     this.padding,
     this.margin,
-    this.glowColor = AppTheme.neonCyan,
+    this.borderRadius = 20,
+    this.borderColor,
+    this.withGlow = false,
   });
 
   @override
   Widget build(BuildContext context) {
     return Container(
       margin: margin,
-      child: ClipRRect(
+      padding: padding,
+      decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(borderRadius),
-        child: BackdropFilter(
-          filter: ImageFilter.blur(sigmaX: 20, sigmaY: 20),
-          child: Container(
-            padding: padding,
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(borderRadius),
-              color: AppTheme.darkCard.withOpacity(0.6),
-              border: Border.all(
-                color: glowColor.withOpacity(0.3),
-                width: 1,
-              ),
-              boxShadow: [
-                BoxShadow(
-                  color: glowColor.withOpacity(0.15),
-                  blurRadius: 15,
-                  spreadRadius: 2,
-                ),
-              ],
-            ),
-            child: child,
-          ),
+        color: AppTheme.darkCard.withOpacity(0.8),
+        border: Border.all(
+          color: (borderColor ?? AppTheme.oceanBlue).withOpacity(0.3),
+          width: 1,
         ),
+        boxShadow: withGlow ? [
+          BoxShadow(
+            color: (borderColor ?? AppTheme.oceanBlue).withOpacity(0.2),
+            blurRadius: 20,
+            spreadRadius: 0,
+          ),
+        ] : null,
       ),
-    );
-  }
-}
-
-// 🌈 Animated Neon Border Widget
-class NeonBorderContainer extends StatefulWidget {
-  final Widget child;
-  final double borderRadius;
-  final EdgeInsetsGeometry? padding;
-  final EdgeInsetsGeometry? margin;
-  final List<Color> colors;
-  final Duration duration;
-
-  const NeonBorderContainer({
-    super.key,
-    required this.child,
-    this.borderRadius = 20,
-    this.padding,
-    this.margin,
-    this.colors = const [
-      AppTheme.neonCyan,
-      AppTheme.neonPurple,
-      AppTheme.neonMagenta,
-      AppTheme.neonCyan,
-    ],
-    this.duration = const Duration(seconds: 3),
-  });
-
-  @override
-  State<NeonBorderContainer> createState() => _NeonBorderContainerState();
-}
-
-class _NeonBorderContainerState extends State<NeonBorderContainer>
-    with SingleTickerProviderStateMixin {
-  late AnimationController _controller;
-
-  @override
-  void initState() {
-    super.initState();
-    _controller = AnimationController(
-      vsync: this,
-      duration: widget.duration,
-    )..repeat();
-  }
-
-  @override
-  void dispose() {
-    _controller.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return AnimatedBuilder(
-      animation: _controller,
-      builder: (context, child) {
-        return Container(
-          margin: widget.margin,
-          padding: const EdgeInsets.all(2),
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(widget.borderRadius + 2),
-            gradient: SweepGradient(
-              startAngle: _controller.value * 2 * 3.14159,
-              colors: widget.colors,
-            ),
-            boxShadow: [
-              BoxShadow(
-                color: widget.colors[0].withOpacity(0.4),
-                blurRadius: 15,
-                spreadRadius: 2,
-              ),
-            ],
-          ),
-          child: Container(
-            padding: widget.padding,
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(widget.borderRadius),
-              color: AppTheme.darkCard,
-            ),
-            child: widget.child,
-          ),
-        );
-      },
+      child: child,
     );
   }
 }

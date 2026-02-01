@@ -3,7 +3,6 @@ import 'package:flutter/cupertino.dart';
 import 'dart:ui';
 import 'dart:math' as math;
 import 'package:provider/provider.dart';
-import 'package:flutter_svg/flutter_svg.dart';
 import 'package:zedsecure/services/v2ray_service.dart';
 import 'package:zedsecure/services/country_detector.dart';
 import 'package:zedsecure/services/log_service.dart';
@@ -18,51 +17,59 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
-  bool _isConnecting = false;
-  late AnimationController _rotationController;
-  late AnimationController _pulseController;
-  late AnimationController _glowController;
   V2RayConfig? _selectedConfig;
+  int? _currentPing;
+  bool _isConnecting = false;
+  
+  late AnimationController _waveController;
+  late AnimationController _pulseController;
+  late AnimationController _orbitController;
 
   @override
   void initState() {
     super.initState();
-    _rotationController = AnimationController(
+    
+    _waveController = AnimationController(
       vsync: this,
-      duration: const Duration(seconds: 8),
+      duration: const Duration(seconds: 3),
     )..repeat();
+    
     _pulseController = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 1500),
-    )..repeat(reverse: true);
-    _glowController = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 2000),
     )..repeat(reverse: true);
-    _loadSelectedConfig();
+    
+    _orbitController = AnimationController(
+      vsync: this,
+      duration: const Duration(seconds: 20),
+    )..repeat();
+    
     final service = Provider.of<V2RayService>(context, listen: false);
     service.addListener(_onServiceChanged);
-  }
-
-  void _onServiceChanged() {
     _loadSelectedConfig();
   }
 
   Future<void> _loadSelectedConfig() async {
     final service = Provider.of<V2RayService>(context, listen: false);
     final config = await service.loadSelectedConfig();
-    if (mounted) {
-      setState(() => _selectedConfig = config);
+    if (config != null && mounted) {
+      setState(() {
+        _selectedConfig = config;
+      });
     }
+  }
+
+  void _onServiceChanged() {
+    if (mounted) setState(() {});
   }
 
   @override
   void dispose() {
+    _waveController.dispose();
+    _pulseController.dispose();
+    _orbitController.dispose();
     final service = Provider.of<V2RayService>(context, listen: false);
     service.removeListener(_onServiceChanged);
-    _rotationController.dispose();
-    _pulseController.dispose();
-    _glowController.dispose();
     super.dispose();
   }
 
@@ -73,89 +80,59 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
         final isConnected = v2rayService.isConnected;
         final activeConfig = v2rayService.activeConfig;
         final status = v2rayService.currentStatus;
-        final displayConfig = activeConfig ?? _selectedConfig;
-
+        
         return Container(
-          decoration: BoxDecoration(
-            gradient: LinearGradient(
-              begin: Alignment.topCenter,
-              end: Alignment.bottomCenter,
-              colors: [
-                AppTheme.darkBg,
-                AppTheme.darkBg2,
-                Colors.black,
-              ],
-            ),
+          decoration: const BoxDecoration(
+            gradient: AppTheme.backgroundGradient,
           ),
           child: SafeArea(
-            bottom: false,
-            child: Column(
+            child: Stack(
               children: [
-                if (isConnected && status != null)
-                  _buildDynamicIsland(v2rayService, status),
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      // App Title with Neon Effect
-                      Text(
-                        'ZED SECURE',
-                        style: AppTheme.neonTextStyle(
-                          color: AppTheme.neonCyan,
-                          fontSize: 20,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                      GestureDetector(
-                        onTap: () => _showLogViewer(context),
-                        child: Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                          decoration: AppTheme.neonButtonDecoration(
-                            color: AppTheme.neonCyan,
-                            borderRadius: 20,
-                          ),
-                          child: Row(
-                            mainAxisSize: MainAxisSize.min,
+                // Animated Bubbles Background
+                ..._buildBubbles(),
+                
+                // Main Content
+                Column(
+                  children: [
+                    // Header
+                    _buildHeader(),
+                    
+                    Expanded(
+                      child: SingleChildScrollView(
+                        physics: const BouncingScrollPhysics(),
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 20),
+                          child: Column(
                             children: [
-                              Icon(
-                                CupertinoIcons.doc_text,
-                                size: 16,
-                                color: AppTheme.neonCyan,
-                              ),
-                              const SizedBox(width: 6),
-                              Text(
-                                'Logs',
-                                style: AppTheme.neonTextStyle(
-                                  color: AppTheme.neonCyan,
-                                  fontSize: 13,
-                                ),
-                              ),
+                              const SizedBox(height: 10),
+                              
+                              // Connection Status Card
+                              _buildConnectionCard(isConnected, status),
+                              
+                              const SizedBox(height: 25),
+                              
+                              // Connect Button
+                              _buildConnectButton(v2rayService, isConnected),
+                              
+                              const SizedBox(height: 25),
+                              
+                              // Active Server Card
+                              if (_selectedConfig != null || activeConfig != null)
+                                _buildServerCard(activeConfig ?? _selectedConfig!, isConnected),
+                              
+                              const SizedBox(height: 20),
+                              
+                              // Stats Grid
+                              if (isConnected && status != null)
+                                _buildStatsGrid(status),
+                              
+                              const SizedBox(height: 100),
                             ],
                           ),
                         ),
                       ),
-                    ],
-                  ),
-                ),
-                Expanded(
-                  child: SingleChildScrollView(
-                    padding: const EdgeInsets.fromLTRB(20, 20, 20, 120),
-                    child: Column(
-                      children: [
-                        const SizedBox(height: 40),
-                        _buildConnectionWidget(isConnected, v2rayService),
-                        const SizedBox(height: 40),
-                        if (displayConfig != null)
-                          _buildServerCard(displayConfig, v2rayService, isConnected)
-                        else
-                          _buildNoServerCard(),
-                        const SizedBox(height: 20),
-                        if (isConnected && status != null)
-                          _buildStatsGrid(status),
-                      ],
                     ),
-                  ),
+                  ],
                 ),
               ],
             ),
@@ -165,121 +142,225 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
     );
   }
 
-  Widget _buildDynamicIsland(V2RayService service, dynamic status) {
-    final duration = status.duration ?? '00:00:00';
-    final uploadSpeed = AppTheme.formatSpeed(status.uploadSpeed);
-    final downloadSpeed = AppTheme.formatSpeed(status.downloadSpeed);
+  // Animated Bubbles
+  List<Widget> _buildBubbles() {
+    return List.generate(5, (index) {
+      final random = math.Random(index);
+      final size = 15.0 + random.nextDouble() * 20;
+      final left = random.nextDouble() * MediaQuery.of(context).size.width;
+      final delay = index * 2.0;
+      
+      return AnimatedBuilder(
+        animation: _waveController,
+        builder: (context, child) {
+          final progress = ((_waveController.value * 2 + delay / 10) % 1.0);
+          final bottom = -50 + (MediaQuery.of(context).size.height + 100) * progress;
+          final opacity = progress < 0.1 ? progress * 4 : (progress > 0.9 ? (1 - progress) * 4 : 0.4);
+          
+          return Positioned(
+            left: left,
+            bottom: bottom,
+            child: Opacity(
+              opacity: opacity.clamp(0.0, 0.4),
+              child: Container(
+                width: size,
+                height: size,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: AppTheme.oceanBlue.withOpacity(0.1),
+                ),
+              ),
+            ),
+          );
+        },
+      );
+    });
+  }
+
+  // Header
+  Widget _buildHeader() {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(20, 10, 20, 0),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          // Logo
+          Row(
+            children: [
+              Container(
+                width: 42,
+                height: 42,
+                decoration: AppTheme.oceanButtonDecoration(
+                  borderRadius: 14,
+                  isActive: true,
+                ),
+                child: const Center(
+                  child: Text('🌊', style: TextStyle(fontSize: 22)),
+                ),
+              ),
+              const SizedBox(width: 12),
+              RichText(
+                text: TextSpan(
+                  style: AppTheme.oceanTextStyle(
+                    fontSize: 20,
+                    fontWeight: FontWeight.w700,
+                  ),
+                  children: const [
+                    TextSpan(text: 'Zed'),
+                    TextSpan(
+                      text: 'Secure',
+                      style: TextStyle(color: AppTheme.oceanBlue),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          
+          // Settings Button
+          GestureDetector(
+            onTap: () => _showLogsModal(),
+            child: Container(
+              width: 42,
+              height: 42,
+              decoration: AppTheme.glassDecoration(borderRadius: 12),
+              child: const Icon(
+                CupertinoIcons.doc_text,
+                color: AppTheme.oceanBlue,
+                size: 22,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // Connection Card with Wave
+  Widget _buildConnectionCard(bool isConnected, dynamic status) {
+    final statusColor = isConnected ? AppTheme.connectedGreen : AppTheme.oceanBlue;
+    final duration = status?.duration ?? '00:00:00';
+    final uploadSpeed = AppTheme.formatSpeed(status?.uploadSpeed);
+    final downloadSpeed = AppTheme.formatSpeed(status?.downloadSpeed);
     
     return AnimatedBuilder(
       animation: _pulseController,
       builder: (context, child) {
         return Container(
-          margin: const EdgeInsets.fromLTRB(20, 10, 20, 0),
-          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
+          padding: const EdgeInsets.all(24),
           decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(40),
-            color: AppTheme.darkCard,
+            borderRadius: BorderRadius.circular(28),
+            gradient: AppTheme.cardGradient,
             border: Border.all(
-              color: AppTheme.neonGreen.withOpacity(0.5 + (_pulseController.value * 0.3)),
+              color: statusColor.withOpacity(0.3 + _pulseController.value * 0.2),
               width: 1.5,
             ),
             boxShadow: [
               BoxShadow(
-                color: AppTheme.neonGreen.withOpacity(0.3 + (_pulseController.value * 0.2)),
-                blurRadius: 20 + (_pulseController.value * 10),
-                spreadRadius: 2 + (_pulseController.value * 3),
+                color: statusColor.withOpacity(0.15 + _pulseController.value * 0.1),
+                blurRadius: 30,
+                spreadRadius: 0,
               ),
             ],
           ),
-          child: Row(
+          child: Column(
             children: [
-              // Animated Neon Dot
-              Container(
-                width: 12,
-                height: 12,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  color: AppTheme.neonGreen,
-                  boxShadow: [
-                    BoxShadow(
-                      color: AppTheme.neonGreen.withOpacity(0.8),
-                      blurRadius: 10 + (_pulseController.value * 5),
-                      spreadRadius: 2 + (_pulseController.value * 2),
-                    ),
-                  ],
-                ),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Text(
-                      'CONNECTED',
-                      style: AppTheme.neonTextStyle(
-                        color: AppTheme.neonGreen,
-                        fontSize: 13,
-                        fontWeight: FontWeight.w700,
+              // Status Row
+              Row(
+                children: [
+                  // Status Indicator
+                  Container(
+                    width: 65,
+                    height: 65,
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(20),
+                      gradient: LinearGradient(
+                        colors: [statusColor, statusColor.withOpacity(0.7)],
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
                       ),
+                      boxShadow: [
+                        BoxShadow(
+                          color: statusColor.withOpacity(0.5),
+                          blurRadius: 20,
+                          spreadRadius: 0,
+                        ),
+                      ],
                     ),
-                    const SizedBox(height: 2),
-                    Text(
-                      duration,
-                      style: TextStyle(
-                        fontSize: 11,
-                        color: Colors.white60,
-                        fontFamily: 'monospace',
-                      ),
+                    child: Icon(
+                      isConnected ? CupertinoIcons.lock_shield_fill : CupertinoIcons.shield,
+                      color: Colors.white,
+                      size: 30,
                     ),
-                  ],
-                ),
-              ),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(12),
-                  color: AppTheme.neonGreen.withOpacity(0.15),
-                  border: Border.all(
-                    color: AppTheme.neonGreen.withOpacity(0.3),
-                    width: 1,
                   ),
-                ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
+                  const SizedBox(width: 16),
+                  
+                  // Status Info
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          isConnected ? 'Protected' : 'Not Protected',
+                          style: AppTheme.oceanTextStyle(
+                            fontSize: 24,
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                        const SizedBox(height: 4),
+                        Row(
+                          children: [
+                            Container(
+                              width: 8,
+                              height: 8,
+                              decoration: BoxDecoration(
+                                shape: BoxShape.circle,
+                                color: statusColor,
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: statusColor.withOpacity(0.8),
+                                    blurRadius: 6,
+                                  ),
+                                ],
+                              ),
+                            ),
+                            const SizedBox(width: 8),
+                            Text(
+                              isConnected ? 'Connected • $duration' : 'Tap to connect',
+                              style: AppTheme.oceanTextStyle(
+                                color: AppTheme.textSecondary,
+                                fontSize: 14,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+              
+              // Speed Row (only when connected)
+              if (isConnected) ...[
+                const SizedBox(height: 20),
+                Row(
                   children: [
-                    Icon(
-                      CupertinoIcons.arrow_up,
-                      size: 12,
-                      color: AppTheme.neonGreen,
+                    _buildSpeedItem(
+                      icon: CupertinoIcons.arrow_up,
+                      label: 'Upload',
+                      value: uploadSpeed,
+                      color: AppTheme.connectedGreen,
                     ),
-                    const SizedBox(width: 4),
-                    Text(
-                      uploadSpeed,
-                      style: TextStyle(
-                        fontSize: 11,
-                        color: AppTheme.neonGreen,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                    const SizedBox(width: 8),
-                    Icon(
-                      CupertinoIcons.arrow_down,
-                      size: 12,
-                      color: AppTheme.neonCyan,
-                    ),
-                    const SizedBox(width: 4),
-                    Text(
-                      downloadSpeed,
-                      style: TextStyle(
-                        fontSize: 11,
-                        color: AppTheme.neonCyan,
-                        fontWeight: FontWeight.w600,
-                      ),
+                    const SizedBox(width: 12),
+                    _buildSpeedItem(
+                      icon: CupertinoIcons.arrow_down,
+                      label: 'Download',
+                      value: downloadSpeed,
+                      color: AppTheme.oceanBlue,
                     ),
                   ],
                 ),
-              ),
+              ],
             ],
           ),
         );
@@ -287,262 +368,351 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
     );
   }
 
-  Widget _buildConnectionWidget(bool isConnected, V2RayService service) {
-    final color = isConnected ? AppTheme.neonGreen : AppTheme.neonCyan;
-    
-    return AnimatedBuilder(
-      animation: _glowController,
-      builder: (context, child) {
-        return GestureDetector(
-          onTap: () => _toggleConnection(service),
-          child: Stack(
-            alignment: Alignment.center,
-            children: [
-              // Outer Glow Ring
-              Container(
-                width: 220,
-                height: 220,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  boxShadow: [
-                    BoxShadow(
-                      color: color.withOpacity(0.2 + (_glowController.value * 0.1)),
-                      blurRadius: 50 + (_glowController.value * 20),
-                      spreadRadius: 10 + (_glowController.value * 5),
-                    ),
-                  ],
-                ),
+  Widget _buildSpeedItem({
+    required IconData icon,
+    required String label,
+    required String value,
+    required Color color,
+  }) {
+    return Expanded(
+      child: Container(
+        padding: const EdgeInsets.all(14),
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(16),
+          color: Colors.black.withOpacity(0.3),
+        ),
+        child: Row(
+          children: [
+            Container(
+              width: 38,
+              height: 38,
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(12),
+                color: color.withOpacity(0.2),
               ),
-              // Rotating Ring
-              AnimatedBuilder(
-                animation: _rotationController,
+              child: Icon(icon, color: color, size: 20),
+            ),
+            const SizedBox(width: 12),
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  label,
+                  style: AppTheme.oceanTextStyle(
+                    color: AppTheme.textMuted,
+                    fontSize: 11,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+                Text(
+                  value,
+                  style: AppTheme.oceanTextStyle(
+                    fontSize: 15,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  // Connect Button with Orbiting Particles
+  Widget _buildConnectButton(V2RayService service, bool isConnected) {
+    final color = isConnected ? AppTheme.connectedGreen : AppTheme.oceanBlue;
+    
+    return GestureDetector(
+      onTap: _isConnecting ? null : () => _toggleConnection(service),
+      child: SizedBox(
+        width: 220,
+        height: 220,
+        child: Stack(
+          alignment: Alignment.center,
+          children: [
+            // Orbit Rings
+            ...List.generate(2, (index) {
+              final size = 180.0 + (index * 40);
+              return AnimatedBuilder(
+                animation: _pulseController,
                 builder: (context, child) {
-                  return Transform.rotate(
-                    angle: _rotationController.value * 2 * math.pi,
-                    child: CustomPaint(
-                      size: const Size(200, 200),
-                      painter: _NeonRingPainter(
-                        isConnected: isConnected,
-                        progress: _isConnecting ? 0.3 : 1.0,
-                        glowIntensity: _glowController.value,
+                  return Container(
+                    width: size,
+                    height: size,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      border: Border.all(
+                        color: color.withOpacity(0.2 + _pulseController.value * 0.1),
+                        width: 2,
+                        strokeAlign: BorderSide.strokeAlignOutside,
                       ),
                     ),
                   );
                 },
-              ),
-              // Center Button
-              Container(
-                width: 160,
-                height: 160,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  color: AppTheme.darkCard,
-                  border: Border.all(
-                    color: color.withOpacity(0.5),
-                    width: 2,
-                  ),
-                  boxShadow: [
-                    BoxShadow(
-                      color: color.withOpacity(0.3),
-                      blurRadius: 30,
-                      spreadRadius: 5,
-                    ),
-                  ],
-                ),
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Icon(
-                      isConnected ? CupertinoIcons.power : CupertinoIcons.bolt_fill,
-                      size: 50,
-                      color: color,
-                      shadows: [
-                        Shadow(
-                          color: color.withOpacity(0.8),
-                          blurRadius: 20,
+              );
+            }),
+            
+            // Orbiting Particles
+            AnimatedBuilder(
+              animation: _orbitController,
+              builder: (context, child) {
+                return Transform.rotate(
+                  angle: _orbitController.value * 2 * math.pi,
+                  child: SizedBox(
+                    width: 200,
+                    height: 200,
+                    child: Stack(
+                      children: [
+                        Positioned(
+                          top: 0,
+                          left: 95,
+                          child: Container(
+                            width: 10,
+                            height: 10,
+                            decoration: BoxDecoration(
+                              shape: BoxShape.circle,
+                              color: AppTheme.connectedGreen,
+                              boxShadow: [
+                                BoxShadow(
+                                  color: AppTheme.connectedGreen.withOpacity(0.8),
+                                  blurRadius: 10,
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                        Positioned(
+                          bottom: 0,
+                          left: 95,
+                          child: Container(
+                            width: 10,
+                            height: 10,
+                            decoration: BoxDecoration(
+                              shape: BoxShape.circle,
+                              color: AppTheme.oceanBlue,
+                              boxShadow: [
+                                BoxShadow(
+                                  color: AppTheme.oceanBlue.withOpacity(0.8),
+                                  blurRadius: 10,
+                                ),
+                              ],
+                            ),
+                          ),
                         ),
                       ],
                     ),
-                    const SizedBox(height: 8),
-                    Text(
-                      _isConnecting 
-                          ? 'CONNECTING...'
-                          : (isConnected ? 'DISCONNECT' : 'CONNECT'),
-                      style: AppTheme.neonTextStyle(
-                        color: color,
-                        fontSize: 12,
-                        fontWeight: FontWeight.w700,
-                      ),
+                  ),
+                );
+              },
+            ),
+            
+            // Main Button
+            AnimatedBuilder(
+              animation: _pulseController,
+              builder: (context, child) {
+                return Container(
+                  width: 150,
+                  height: 150,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: AppTheme.darkCard,
+                    border: Border.all(
+                      color: color.withOpacity(0.5 + _pulseController.value * 0.3),
+                      width: 3,
                     ),
-                  ],
-                ),
-              ),
-            ],
-          ),
-        );
-      },
+                    boxShadow: [
+                      BoxShadow(
+                        color: color.withOpacity(0.3 + _pulseController.value * 0.2),
+                        blurRadius: 40,
+                        spreadRadius: 0,
+                      ),
+                    ],
+                  ),
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      if (_isConnecting)
+                        SizedBox(
+                          width: 40,
+                          height: 40,
+                          child: CircularProgressIndicator(
+                            color: color,
+                            strokeWidth: 3,
+                          ),
+                        )
+                      else
+                        Icon(
+                          isConnected ? CupertinoIcons.power : CupertinoIcons.bolt_fill,
+                          color: color,
+                          size: 45,
+                        ),
+                      const SizedBox(height: 8),
+                      Text(
+                        _isConnecting 
+                            ? 'Connecting...' 
+                            : (isConnected ? 'Disconnect' : 'Connect'),
+                        style: AppTheme.oceanTextStyle(
+                          color: color,
+                          fontSize: 12,
+                          fontWeight: FontWeight.w700,
+                          withGlow: true,
+                        ),
+                      ),
+                    ],
+                  ),
+                );
+              },
+            ),
+          ],
+        ),
+      ),
     );
   }
 
-  Widget _buildServerCard(V2RayConfig config, V2RayService service, bool isConnected) {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(20),
-      decoration: AppTheme.neonGlowDecoration(
-        glowColor: isConnected ? AppTheme.neonGreen : AppTheme.neonCyan,
-        borderRadius: 20,
-        glowIntensity: 0.3,
-        glowBlur: 15,
-        glowSpread: 5,
-      ),
-      child: Column(
-        children: [
-          Row(
+  // Server Card
+  Widget _buildServerCard(V2RayConfig config, bool isConnected) {
+    final countryCode = config.countryCode ?? 'UN';
+    final flagEmoji = CountryDetector.getCountryEmoji(countryCode);
+    
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Padding(
+          padding: const EdgeInsets.only(left: 4, bottom: 10),
+          child: Text(
+            'ACTIVE SERVER',
+            style: AppTheme.oceanTextStyle(
+              color: AppTheme.textMuted,
+              fontSize: 11,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+        ),
+        Container(
+          padding: const EdgeInsets.all(16),
+          decoration: AppTheme.oceanGlowDecoration(
+            color: isConnected ? AppTheme.connectedGreen : AppTheme.oceanBlue,
+            borderRadius: 20,
+            glowIntensity: isConnected ? 0.25 : 0.15,
+          ),
+          child: Row(
             children: [
-              // Server Icon with Neon
+              // Flag
               Container(
                 width: 50,
                 height: 50,
                 decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(15),
-                  gradient: LinearGradient(
-                    colors: [
-                      AppTheme.neonCyan.withOpacity(0.3),
-                      AppTheme.neonPurple.withOpacity(0.3),
-                    ],
-                  ),
+                  borderRadius: BorderRadius.circular(14),
+                  gradient: AppTheme.cardGradient,
                   border: Border.all(
-                    color: AppTheme.neonCyan.withOpacity(0.5),
-                    width: 1,
+                    color: AppTheme.oceanBlue.withOpacity(0.3),
                   ),
                 ),
-                child: Icon(
-                  CupertinoIcons.globe,
-                  color: AppTheme.neonCyan,
-                  size: 24,
+                child: Center(
+                  child: Text(flagEmoji, style: const TextStyle(fontSize: 26)),
                 ),
               ),
-              const SizedBox(width: 16),
+              const SizedBox(width: 14),
+              
+              // Server Info
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
                       config.remark,
-                      style: AppTheme.neonTextStyle(
-                        color: Colors.white,
-                        fontSize: 16,
+                      style: AppTheme.oceanTextStyle(
+                        fontSize: 15,
                         fontWeight: FontWeight.w600,
                       ),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                     ),
                     const SizedBox(height: 4),
-                    Text(
-                      '${config.configType.toUpperCase()} • ${config.address}',
-                      style: TextStyle(
-                        fontSize: 12,
-                        color: AppTheme.systemGray,
-                      ),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
+                    Row(
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                          decoration: BoxDecoration(
+                            borderRadius: BorderRadius.circular(6),
+                            color: AppTheme.connectedGreen.withOpacity(0.2),
+                          ),
+                          child: Text(
+                            config.configType.toUpperCase(),
+                            style: AppTheme.oceanTextStyle(
+                              color: AppTheme.connectedGreen,
+                              fontSize: 10,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        Text(
+                          config.address,
+                          style: AppTheme.oceanTextStyle(
+                            color: AppTheme.textMuted,
+                            fontSize: 12,
+                          ),
+                        ),
+                      ],
                     ),
                   ],
                 ),
               ),
-              // Status Indicator
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(20),
-                  color: (isConnected ? AppTheme.neonGreen : AppTheme.neonCyan).withOpacity(0.15),
-                  border: Border.all(
-                    color: (isConnected ? AppTheme.neonGreen : AppTheme.neonCyan).withOpacity(0.5),
-                    width: 1,
-                  ),
+              
+              // Ping
+              if (_currentPing != null)
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.end,
+                  children: [
+                    Text(
+                      '${_currentPing}ms',
+                      style: AppTheme.oceanTextStyle(
+                        color: AppTheme.getPingColor(_currentPing),
+                        fontSize: 20,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                    Text(
+                      'PING',
+                      style: AppTheme.oceanTextStyle(
+                        color: AppTheme.textMuted,
+                        fontSize: 10,
+                      ),
+                    ),
+                  ],
                 ),
-                child: Text(
-                  isConnected ? 'ACTIVE' : 'SELECTED',
-                  style: AppTheme.neonTextStyle(
-                    color: isConnected ? AppTheme.neonGreen : AppTheme.neonCyan,
-                    fontSize: 10,
-                    fontWeight: FontWeight.w700,
-                  ),
-                ),
-              ),
             ],
           ),
-          if (isConnected) ...[
-            const SizedBox(height: 16),
-            _PingCardWidget(service: service),
-          ],
-        ],
-      ),
+        ),
+      ],
     );
   }
 
-  Widget _buildNoServerCard() {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(30),
-      decoration: AppTheme.neonGlowDecoration(
-        glowColor: AppTheme.neonPurple,
-        borderRadius: 20,
-        glowIntensity: 0.2,
-      ),
-      child: Column(
-        children: [
-          Icon(
-            CupertinoIcons.antenna_radiowaves_left_right,
-            size: 50,
-            color: AppTheme.neonPurple,
-          ),
-          const SizedBox(height: 16),
-          Text(
-            'NO SERVER SELECTED',
-            style: AppTheme.neonTextStyle(
-              color: AppTheme.neonPurple,
-              fontSize: 14,
-              fontWeight: FontWeight.w700,
-            ),
-          ),
-          const SizedBox(height: 8),
-          Text(
-            'Go to Servers tab to add or select a server',
-            style: TextStyle(
-              fontSize: 12,
-              color: Colors.white60,
-            ),
-            textAlign: TextAlign.center,
-          ),
-        ],
-      ),
-    );
-  }
-
+  // Stats Grid
   Widget _buildStatsGrid(dynamic status) {
-    return Column(
+    return Row(
       children: [
-        Row(
-          children: [
-            Expanded(
-              child: _buildStatCard(
-                icon: CupertinoIcons.arrow_up_circle_fill,
-                title: 'UPLOAD',
-                value: AppTheme.formatBytes(status.uploadTotal),
-                color: AppTheme.neonGreen,
-              ),
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: _buildStatCard(
-                icon: CupertinoIcons.arrow_down_circle_fill,
-                title: 'DOWNLOAD',
-                value: AppTheme.formatBytes(status.downloadTotal),
-                color: AppTheme.neonCyan,
-              ),
-            ),
-          ],
+        _buildStatCard(
+          icon: CupertinoIcons.arrow_up_circle_fill,
+          label: 'Uploaded',
+          value: AppTheme.formatBytes(status.upload),
+          color: AppTheme.connectedGreen,
+        ),
+        const SizedBox(width: 12),
+        _buildStatCard(
+          icon: CupertinoIcons.arrow_down_circle_fill,
+          label: 'Downloaded',
+          value: AppTheme.formatBytes(status.download),
+          color: AppTheme.oceanBlue,
+        ),
+        const SizedBox(width: 12),
+        _buildStatCard(
+          icon: CupertinoIcons.clock_fill,
+          label: 'Uptime',
+          value: '99%',
+          color: AppTheme.oceanCyan,
         ),
       ],
     );
@@ -550,125 +720,129 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
 
   Widget _buildStatCard({
     required IconData icon,
-    required String title,
+    required String label,
     required String value,
     required Color color,
   }) {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: AppTheme.neonGlowDecoration(
-        glowColor: color,
-        borderRadius: 16,
-        glowIntensity: 0.2,
-        glowBlur: 10,
-        glowSpread: 2,
+    return Expanded(
+      child: Container(
+        padding: const EdgeInsets.symmetric(vertical: 18, horizontal: 12),
+        decoration: AppTheme.glassDecoration(borderRadius: 18),
+        child: Column(
+          children: [
+            Icon(icon, color: color, size: 24),
+            const SizedBox(height: 10),
+            Text(
+              value,
+              style: AppTheme.oceanTextStyle(
+                color: color,
+                fontSize: 16,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+            const SizedBox(height: 4),
+            Text(
+              label,
+              style: AppTheme.oceanTextStyle(
+                color: AppTheme.textMuted,
+                fontSize: 10,
+              ),
+            ),
+          ],
+        ),
       ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Icon(icon, color: color, size: 24),
-          const SizedBox(height: 12),
-          Text(
-            title,
-            style: TextStyle(
-              fontSize: 10,
-              color: Colors.white60,
-              fontWeight: FontWeight.w600,
-              letterSpacing: 1,
-            ),
-          ),
-          const SizedBox(height: 4),
-          Text(
-            value,
-            style: AppTheme.neonTextStyle(
-              color: color,
-              fontSize: 18,
-              fontWeight: FontWeight.w700,
-            ),
+    );
+  }
+
+  // Toggle Connection
+  Future<void> _toggleConnection(V2RayService service) async {
+    if (_isConnecting) return;
+    
+    setState(() => _isConnecting = true);
+    
+    try {
+      if (service.isConnected) {
+        await service.disconnect();
+        _currentPing = null;
+      } else {
+        if (_selectedConfig == null) {
+          _showNoServerDialog();
+          return;
+        }
+        await service.connect(_selectedConfig!);
+        _startPingMonitor(service);
+      }
+    } catch (e) {
+      debugPrint('Connection error: $e');
+    } finally {
+      if (mounted) {
+        setState(() => _isConnecting = false);
+      }
+    }
+  }
+
+  void _startPingMonitor(V2RayService service) async {
+    while (mounted && service.isConnected) {
+      final ping = await service.getConnectedServerDelay();
+      if (mounted) {
+        setState(() => _currentPing = ping);
+      }
+      await Future.delayed(const Duration(seconds: 5));
+    }
+  }
+
+  void _showNoServerDialog() {
+    setState(() => _isConnecting = false);
+    showCupertinoDialog(
+      context: context,
+      builder: (context) => CupertinoAlertDialog(
+        title: const Text('No Server Selected'),
+        content: const Text('Please select a server from the Servers tab first.'),
+        actions: [
+          CupertinoDialogAction(
+            child: const Text('OK'),
+            onPressed: () => Navigator.pop(context),
           ),
         ],
       ),
     );
   }
 
-  Future<void> _toggleConnection(V2RayService service) async {
-    if (_isConnecting) return;
-
-    if (service.isConnected) {
-      await service.disconnect();
-    } else {
-      if (_selectedConfig == null) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Please select a server first'),
-            backgroundColor: AppTheme.disconnectedRed,
-          ),
-        );
-        return;
-      }
-
-      setState(() => _isConnecting = true);
-      
-      try {
-        await service.connect(_selectedConfig!);
-      } catch (e) {
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text('Connection failed: $e'),
-              backgroundColor: AppTheme.disconnectedRed,
-            ),
-          );
-        }
-      } finally {
-        if (mounted) {
-          setState(() => _isConnecting = false);
-        }
-      }
-    }
-  }
-
-  void _showLogViewer(BuildContext context) {
+  // Logs Modal
+  void _showLogsModal() {
     showModalBottomSheet(
       context: context,
-      isScrollControlled: true,
       backgroundColor: Colors.transparent,
+      isScrollControlled: true,
       builder: (context) => Container(
         height: MediaQuery.of(context).size.height * 0.7,
-        decoration: BoxDecoration(
+        decoration: const BoxDecoration(
           color: AppTheme.darkCard,
-          borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
-          border: Border.all(
-            color: AppTheme.neonCyan.withOpacity(0.3),
-            width: 1,
-          ),
-          boxShadow: [
-            BoxShadow(
-              color: AppTheme.neonCyan.withOpacity(0.2),
-              blurRadius: 20,
-              spreadRadius: 5,
-            ),
-          ],
+          borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
         ),
         child: Column(
           children: [
+            // Handle
             Container(
+              margin: const EdgeInsets.only(top: 12),
               width: 40,
               height: 4,
-              margin: const EdgeInsets.only(top: 12),
               decoration: BoxDecoration(
-                color: AppTheme.neonCyan.withOpacity(0.5),
                 borderRadius: BorderRadius.circular(2),
+                color: AppTheme.textMuted,
               ),
             ),
+            // Header
             Padding(
-              padding: const EdgeInsets.all(16),
+              padding: const EdgeInsets.all(20),
               child: Row(
                 children: [
+                  const Icon(CupertinoIcons.doc_text, color: AppTheme.oceanBlue),
+                  const SizedBox(width: 12),
                   Text(
-                    'LOGS',
-                    style: AppTheme.neonTextStyle(
-                      color: AppTheme.neonCyan,
+                    'Connection Logs',
+                    style: AppTheme.oceanTextStyle(
+                      color: AppTheme.oceanBlue,
                       fontSize: 18,
                       fontWeight: FontWeight.w700,
                     ),
@@ -681,13 +855,14 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                     },
                     child: Container(
                       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                      decoration: AppTheme.neonButtonDecoration(
-                        color: AppTheme.disconnectedRed,
-                        borderRadius: 15,
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(15),
+                        color: AppTheme.disconnectedRed.withOpacity(0.2),
+                        border: Border.all(color: AppTheme.disconnectedRed.withOpacity(0.5)),
                       ),
                       child: Text(
                         'Clear',
-                        style: TextStyle(
+                        style: AppTheme.oceanTextStyle(
                           color: AppTheme.disconnectedRed,
                           fontSize: 12,
                           fontWeight: FontWeight.w600,
@@ -698,6 +873,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                 ],
               ),
             ),
+            // Logs List
             Expanded(
               child: ListenableBuilder(
                 listenable: LogService(),
@@ -707,7 +883,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                     return Center(
                       child: Text(
                         'No logs yet',
-                        style: TextStyle(color: Colors.white60),
+                        style: AppTheme.oceanTextStyle(color: AppTheme.textMuted),
                       ),
                     );
                   }
@@ -719,20 +895,19 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                       Color levelColor;
                       switch (log.level) {
                         case LogLevel.info:
-                          levelColor = AppTheme.neonCyan;
+                          levelColor = AppTheme.oceanBlue;
                           break;
                         case LogLevel.warning:
-                          levelColor = AppTheme.neonOrange;
+                          levelColor = AppTheme.warningOrange;
                           break;
                         case LogLevel.error:
                           levelColor = AppTheme.disconnectedRed;
                           break;
                         case LogLevel.debug:
-                          levelColor = AppTheme.neonGreen;
+                          levelColor = AppTheme.connectedGreen;
                           break;
                         default:
                           levelColor = AppTheme.systemGray;
-                          break;
                       }
                       
                       return Padding(
@@ -746,22 +921,16 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                               decoration: BoxDecoration(
                                 color: levelColor,
                                 borderRadius: BorderRadius.circular(2),
-                                boxShadow: [
-                                  BoxShadow(
-                                    color: levelColor.withOpacity(0.5),
-                                    blurRadius: 5,
-                                  ),
-                                ],
                               ),
                             ),
                             const SizedBox(width: 8),
                             Expanded(
-                              child: SelectableText(
+                              child: Text(
                                 log.toString(),
                                 style: TextStyle(
                                   fontFamily: 'monospace',
                                   fontSize: 11,
-                                  color: Colors.white70,
+                                  color: AppTheme.textSecondary,
                                   height: 1.4,
                                 ),
                               ),
@@ -778,203 +947,5 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
         ),
       ),
     );
-  }
-}
-
-class _PingCardWidget extends StatefulWidget {
-  final V2RayService service;
-
-  const _PingCardWidget({required this.service});
-
-  @override
-  State<_PingCardWidget> createState() => _PingCardWidgetState();
-}
-
-class _PingCardWidgetState extends State<_PingCardWidget> {
-  int? _ping;
-  bool _isLoading = false;
-
-  @override
-  void initState() {
-    super.initState();
-    _loadPing();
-  }
-
-  Future<void> _loadPing() async {
-    if (!mounted) return;
-    setState(() => _isLoading = true);
-    
-    try {
-      await Future.delayed(const Duration(milliseconds: 500));
-      final ping = await widget.service.getConnectedServerDelay();
-      if (mounted) {
-        setState(() {
-          _ping = ping;
-          _isLoading = false;
-        });
-      }
-    } catch (e) {
-      if (mounted) {
-        setState(() {
-          _ping = null;
-          _isLoading = false;
-        });
-      }
-    }
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final pingColor = AppTheme.getPingColor(_ping);
-    
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(12),
-        color: pingColor.withOpacity(0.1),
-        border: Border.all(
-          color: pingColor.withOpacity(0.3),
-          width: 1,
-        ),
-      ),
-      child: Row(
-        children: [
-          Icon(
-            CupertinoIcons.speedometer,
-            size: 20,
-            color: pingColor,
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'LATENCY',
-                  style: TextStyle(
-                    fontSize: 10,
-                    color: Colors.white60,
-                    letterSpacing: 1,
-                  ),
-                ),
-                Text(
-                  _isLoading 
-                      ? 'Testing...' 
-                      : (_ping != null && _ping! >= 0 ? '${_ping}ms' : 'N/A'),
-                  style: AppTheme.neonTextStyle(
-                    color: pingColor,
-                    fontSize: 16,
-                    fontWeight: FontWeight.w700,
-                  ),
-                ),
-              ],
-            ),
-          ),
-          GestureDetector(
-            onTap: _isLoading ? null : _loadPing,
-            child: Container(
-              padding: const EdgeInsets.all(8),
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(10),
-                color: AppTheme.neonCyan.withOpacity(0.1),
-                border: Border.all(
-                  color: AppTheme.neonCyan.withOpacity(0.3),
-                  width: 1,
-                ),
-              ),
-              child: _isLoading
-                  ? SizedBox(
-                      width: 18,
-                      height: 18,
-                      child: CircularProgressIndicator(
-                        strokeWidth: 2,
-                        color: AppTheme.neonCyan,
-                      ),
-                    )
-                  : Icon(
-                      CupertinoIcons.refresh,
-                      size: 18,
-                      color: AppTheme.neonCyan,
-                    ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _NeonRingPainter extends CustomPainter {
-  final bool isConnected;
-  final double progress;
-  final double glowIntensity;
-
-  _NeonRingPainter({
-    required this.isConnected,
-    required this.progress,
-    this.glowIntensity = 0.5,
-  });
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    final center = Offset(size.width / 2, size.height / 2);
-    final radius = size.width / 2 - 8;
-    final color = isConnected ? AppTheme.neonGreen : AppTheme.neonCyan;
-    
-    // Background ring
-    final bgPaint = Paint()
-      ..color = color.withOpacity(0.1)
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 6
-      ..strokeCap = StrokeCap.round;
-    
-    canvas.drawCircle(center, radius, bgPaint);
-    
-    // Main neon ring with gradient
-    final fgPaint = Paint()
-      ..shader = SweepGradient(
-        colors: [
-          color.withOpacity(0.1),
-          color.withOpacity(0.5),
-          color,
-          color.withOpacity(0.5),
-          color.withOpacity(0.1),
-        ],
-      ).createShader(Rect.fromCircle(center: center, radius: radius))
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 6
-      ..strokeCap = StrokeCap.round;
-    
-    canvas.drawArc(
-      Rect.fromCircle(center: center, radius: radius),
-      -math.pi / 2,
-      2 * math.pi * progress,
-      false,
-      fgPaint,
-    );
-    
-    // Glow effect
-    final glowPaint = Paint()
-      ..color = color.withOpacity(0.3 + (glowIntensity * 0.2))
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 12
-      ..strokeCap = StrokeCap.round
-      ..maskFilter = MaskFilter.blur(BlurStyle.normal, 10);
-    
-    canvas.drawArc(
-      Rect.fromCircle(center: center, radius: radius),
-      -math.pi / 2,
-      2 * math.pi * progress,
-      false,
-      glowPaint,
-    );
-  }
-
-  @override
-  bool shouldRepaint(covariant _NeonRingPainter oldDelegate) {
-    return oldDelegate.isConnected != isConnected || 
-           oldDelegate.progress != progress ||
-           oldDelegate.glowIntensity != glowIntensity;
   }
 }
